@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 	<head>
@@ -50,6 +52,8 @@
 				transition: transform 0.35s ease, opacity 0.35s ease, left 0.35s ease,
 					top 0.35s ease, width 0.35s ease, height 0.35s ease,
 					border-radius 0.35s ease;
+				will-change: transform, opacity;
+				contain: layout style paint;
 			}
 
 			.card.dragging {
@@ -211,7 +215,61 @@
 				'记得给自己放松',
 				'每天都要元气满满',
 				'今天也要好好爱自己',
-				'适当休息一下'
+				'适当休息一下',
+				'相信自己，你很棒',
+				'每一步都算数',
+				'坚持就是胜利',
+				'你比想象中更强大',
+				'今天的努力不会白费',
+				'越努力越幸运',
+				'成功就在前方',
+				'永远不要放弃',
+				'你值得更好的',
+				'困难只是暂时的',
+				'保持热爱，奔赴山海',
+				'未来可期',
+				'做最好的自己',
+				'每天进步一点点',
+				'你的努力终会发光',
+				'勇敢追梦',
+				'相信奇迹会发生',
+				'今天也是充满希望的一天',
+				'你已经很努力了',
+				'慢慢来，不着急',
+				'星光不问赶路人',
+				'时光不负有心人',
+				'所有的美好都在路上',
+				'你的笑容很珍贵',
+				'别忘了答应自己要做的事',
+				'温柔且坚定',
+				'一切都是最好的安排',
+				'保持热情，保持善良',
+				'你是独一无二的',
+				'每个瞬间都值得珍惜',
+				'愿你眼里有光，心中有爱',
+				'不负时光，不负自己',
+				'做自己的太阳',
+				'心怀希望，所向披靡',
+				'生活明朗，万物可爱',
+				'人间值得，未来可期',
+				'保持热爱，翻山越岭',
+				'愿你所愿，终能实现',
+				'向阳而生，逐光而行',
+				'心中有梦，眼里有光',
+				'不畏将来，不念过往',
+				'温柔对待这个世界',
+				'你的努力会被看见',
+				'每一天都是新的开始',
+				'相信美好即将发生',
+				'保持初心，砥砺前行',
+				'愿你历尽千帆，归来仍是少年',
+				'脚踏实地，仰望星空',
+				'心有猛虎，细嗅蔷薇',
+				'愿你三冬暖，春不寒',
+				'山高路远，看世界也找自己',
+				'愿你所到之处，遍地阳光',
+				'保持善良，保持勇敢',
+				'你的温柔会被世界温柔以待'
 			]
 
 			const colors = [
@@ -222,7 +280,23 @@
 				'#e5d7ff',
 				'#f9f7d9',
 				'#d2f0f8',
-				'#ffd4f5'
+				'#ffd4f5',
+				'#ffe4cc',
+				'#d4f1f4',
+				'#ffd9e8',
+				'#e8f5e9',
+				'#fff9c4',
+				'#f3e5f5',
+				'#e1f5fe',
+				'#fff3e0',
+				'#fce4ec',
+				'#e0f2f1',
+				'#f1f8e9',
+				'#ede7f6',
+				'#e8eaf6',
+				'#ffebee',
+				'#e3f2fd',
+				'#fff8e1'
 			]
 
 			const cardStates = new WeakMap()
@@ -252,7 +326,8 @@
 				const translateX = state.translateX ?? 0
 				const translateY = state.translateY ?? 0
 				const angle = state.angle ?? 0
-				card.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale}) rotate(${angle}deg)`
+				// 使用 translate3d 启用硬件加速
+				card.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale}) rotate(${angle}deg)`
 			}
 
 			function bringToFront(card) {
@@ -271,23 +346,20 @@
 
 			function setupCardInteractions(card) {
 				const header = card.querySelector('.card-header')
-				const closeBtn = card.querySelector('.control.close')
-				const minimizeBtn = card.querySelector('.control.minimize')
-				const maximizeBtn = card.querySelector('.control.maximize')
 
-				closeBtn.addEventListener('click', event => {
-					event.stopPropagation()
-					closeCard(card)
-				})
-
-				minimizeBtn.addEventListener('click', event => {
-					event.stopPropagation()
-					minimizeCard(card)
-				})
-
-				maximizeBtn.addEventListener('click', event => {
-					event.stopPropagation()
-					toggleMaximize(card)
+				// 使用事件委托优化性能
+				card.addEventListener('click', event => {
+					const target = event.target
+					if (target.classList.contains('close')) {
+						event.stopPropagation()
+						closeCard(card)
+					} else if (target.classList.contains('minimize')) {
+						event.stopPropagation()
+						minimizeCard(card)
+					} else if (target.classList.contains('maximize')) {
+						event.stopPropagation()
+						toggleMaximize(card)
+					}
 				})
 
 				header.addEventListener('pointerdown', event => {
@@ -297,7 +369,7 @@
 
 				card.addEventListener('pointerdown', () => {
 					bringToFront(card)
-				})
+				}, { passive: true })
 
 				header.addEventListener('dblclick', event => {
 					if (!event.target.closest('.control')) {
@@ -475,12 +547,16 @@
 				let pendingLeft = state.left
 				let pendingTop = state.top
 
+				// 缓存卡片尺寸，避免重复读取
+				const cardWidth = state.width || card.offsetWidth
+				const cardHeight = state.height || card.offsetHeight
+
 				const commitDrag = () => {
 					dragFrame = null
-					const maxLeft = Math.max(window.innerWidth - card.offsetWidth, 0)
-					const maxTop = Math.max(window.innerHeight - card.offsetHeight, 0)
-					state.left = clamp(pendingLeft, -card.offsetWidth * 0.4, maxLeft)
-					state.top = clamp(pendingTop, -card.offsetHeight * 0.4, maxTop)
+					const maxLeft = Math.max(window.innerWidth - cardWidth, 0)
+					const maxTop = Math.max(window.innerHeight - cardHeight, 0)
+					state.left = clamp(pendingLeft, -cardWidth * 0.4, maxLeft)
+					state.top = clamp(pendingTop, -cardHeight * 0.4, maxTop)
 					card.style.left = `${state.left}px`
 					card.style.top = `${state.top}px`
 				}
@@ -508,8 +584,8 @@
 					document.removeEventListener('pointerup', handlePointerUp)
 				}
 
-				document.addEventListener('pointermove', handlePointerMove)
-				document.addEventListener('pointerup', handlePointerUp)
+				document.addEventListener('pointermove', handlePointerMove, { passive: true })
+				document.addEventListener('pointerup', handlePointerUp, { passive: true })
 			}
 
 			function createCard() {
@@ -532,13 +608,13 @@
 					Math.random() *
 						Math.max(window.innerHeight - cardHeight - verticalMargin * 2, 0)
 
-				card.style.background = color
-				card.style.left = `${left}px`
-				card.style.top = `${top}px`
-				if (activeMaximizedCard && zIndexCursor >= MAXIMIZED_LAYER - 2) {
-					zIndexCursor = MAXIMIZED_LAYER - 2
-				}
-				card.style.zIndex = ++zIndexCursor
+				// 批量设置样式减少重排
+				card.style.cssText = `
+					background: ${color};
+					left: ${left}px;
+					top: ${top}px;
+					z-index: ${activeMaximizedCard && zIndexCursor >= MAXIMIZED_LAYER - 2 ? MAXIMIZED_LAYER - 2 : ++zIndexCursor};
+				`
 
 				card.innerHTML = `
 					<div class="card-header">
@@ -566,8 +642,11 @@
 
 				cardStates.set(card, state)
 				applyTransform(card, state)
+
+				// 使用 DocumentFragment 减少重排
 				board.appendChild(card)
 
+				// 批量读取布局信息
 				state.width = card.offsetWidth
 				state.height = card.offsetHeight
 
@@ -579,9 +658,10 @@
 
 				setupCardInteractions(card)
 
+				// 优化：使用更高效的方式删除旧卡片
 				if (board.children.length > maxCards) {
 					const oldest = board.firstElementChild
-					if (oldest && oldest !== card) {
+					if (oldest && oldest !== card && !cardStates.get(oldest)?.maximized) {
 						oldest.remove()
 					}
 				}
@@ -591,22 +671,43 @@
 				setTimeout(createCard, i * (isMobile ? 60 : 40))
 			}
 
-			setInterval(() => {
-				createCard()
-			}, spawnInterval)
+			// 动态调整生成间隔，避免卡片过多导致卡顿
+			function scheduleNextCard() {
+				const cardCount = board.children.length
+				let currentInterval = spawnInterval
 
+				// 当卡片数量接近上限时，减慢生成速度
+				if (cardCount > maxCards * 0.8) {
+					currentInterval = spawnInterval * 2
+				} else if (cardCount > maxCards * 0.6) {
+					currentInterval = spawnInterval * 1.5
+				}
+
+				setTimeout(() => {
+					createCard()
+					scheduleNextCard()
+				}, currentInterval)
+			}
+
+			scheduleNextCard()
+
+			// 使用防抖优化 resize 事件
+			let resizeTimer = null
 			window.addEventListener('resize', () => {
-				isMobile =
-					window.matchMedia('(pointer: coarse)').matches ||
-					window.innerWidth <= 768
-				// 视口变化时重新切换移动端模式，并同步全屏卡片的宽高
-				document.body.classList.toggle('is-mobile', isMobile)
+				if (resizeTimer) clearTimeout(resizeTimer)
+				resizeTimer = setTimeout(() => {
+					isMobile =
+						window.matchMedia('(pointer: coarse)').matches ||
+						window.innerWidth <= 768
+					// 视口变化时重新切换移动端模式，并同步全屏卡片的宽高
+					document.body.classList.toggle('is-mobile', isMobile)
 
-				document.querySelectorAll('.card.maximized').forEach(card => {
-					card.style.width = `${window.innerWidth}px`
-					card.style.height = `${window.innerHeight}px`
-				})
-			})
+					document.querySelectorAll('.card.maximized').forEach(card => {
+						card.style.width = `${window.innerWidth}px`
+						card.style.height = `${window.innerHeight}px`
+					})
+				}, 150)
+			}, { passive: true })
 		</script>
 	</body>
 </html>
